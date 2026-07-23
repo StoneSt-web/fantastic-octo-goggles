@@ -1,0 +1,14 @@
+{
+  "requests": [
+    {
+      "prompt": "A cute adorable 3D-rendered chubby angel character with round orange face, big shiny blue eyes, white hooded robe, white feathered wings, and a thin golden halo ring above the head. The character stays mostly still, only doing a subtle gentle breathing motion (chest slightly rising and falling) and ONE slow blink in the middle of the video. The halo is a thin golden ring with completely transparent hollow center. The character design, halo, wings, robe, and pose must remain EXACTLY the same as the input image. Pure white background.",
+      "input_image": {
+        "file": "F:\\MinMax Code\\0629\\desktop-pet\\skins\\阳光天使\\frames\\original-angel.png"
+      },
+      "reference_type": "first_frame",
+      "duration": 6,
+      "resolution": "768P",
+      "model": "minimax-video-01"
+    }
+  ]
+}

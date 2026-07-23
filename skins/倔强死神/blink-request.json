@@ -1,0 +1,12 @@
+{
+  "requests": [
+    {
+      "prompt": "Preserve the EXACT character. Make ONLY one change: change the open eyes to closed smiling crescent-moon eyes (squinting smile) like blinking. Keep everything else identical: the black hooded reaper, the black scythe held in both blue fluffy hands, the black angel wings on both sides, the blue fluffy round body, the small smile on the mouth, the black robe. Pure clean solid white background, NO decorative elements, NO motion lines, NO speed effects, NO circular ornaments, NO shadows on background. Square composition, single character centered.",
+      "input_files": [
+        "F:\\MinMax Code\\0629\\desktop-pet\\skins\\死神倔强卜\\frames\\pet.png"
+      ],
+      "aspect_ratio": "1:1",
+      "resolution": "2K"
+    }
+  ]
+}

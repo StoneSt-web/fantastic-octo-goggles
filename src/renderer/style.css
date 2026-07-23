@@ -1,0 +1,433 @@
+/* 全透明窗口必备：html/body 不能有任何背景 */
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 桌宠缩放变量 —— 由 JS 在 applyPetScale() 中设置 (0.8-1.2) */
+html {
+  --pet-scale: 1;
+}
+
+body {
+  /* 给整个 webview 一个鼠标默认手势的提示 */
+  cursor: grab;
+}
+
+body.dragging {
+  cursor: grabbing;
+}
+
+/* 闲置动画 —— 通过 .pet 容器变换实现，不修改图片位置 */
+/* 闲置动画 —— 通过 .pet 容器变换实现，不修改图片位置
+ * 关键：使用 cubic-bezier 自定义曲线，让动作更自然
+ *
+ * 呼吸动画: 不在 CSS 里做,因为 .pet 已经被闲置动画(.shake/.walk 等)覆盖。
+ * 改用 JS 持续微调 transform —— 详见 renderer.js 的 breatheTick。
+ */
+
+@keyframes pet-shake {
+  0%, 100% { transform: rotate(0deg); }
+  15%      { transform: rotate(-4deg); }
+  35%      { transform: rotate(4deg); }
+  55%      { transform: rotate(-3deg); }
+  75%      { transform: rotate(2deg); }
+  90%      { transform: rotate(-1deg); }
+}
+
+/* v1.13.1 番茄完成庆祝: 跳起来 + 轻微缩放 */
+@keyframes pet-celebrate {
+  0%        { transform: translateY(0)    scale(1); }
+  20%       { transform: translateY(-12px) scale(1.1); }
+  40%       { transform: translateY(0)    scale(0.95); }
+  60%       { transform: translateY(-8px)  scale(1.05); }
+  80%       { transform: translateY(0)    scale(1); }
+  100%      { transform: translateY(0)    scale(1); }
+}
+
+@keyframes pet-shrink {
+  0%, 100% { transform: scale(1); }
+  40%, 60% { transform: scale(0.9); }
+}
+
+@keyframes pet-walk {
+  0%, 100% { transform: translate(0, 0); }
+  20%      { transform: translate(-8px, -2px); }
+  40%      { transform: translate(6px, -3px); }
+  60%      { transform: translate(-4px, -2px); }
+  80%      { transform: translate(2px, 0); }
+}
+
+/* 点头/打招呼：身体微微下沉再回弹，像点头 */
+@keyframes pet-nod {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  30%      { transform: translateY(4px) rotate(2deg); }
+  60%      { transform: translateY(0) rotate(-1deg); }
+}
+
+/* 挥手/打招呼：左右摇摆 */
+@keyframes pet-wave {
+  0%, 100% { transform: rotate(0deg); }
+  20%      { transform: rotate(-8deg); }
+  40%      { transform: rotate(8deg); }
+  60%      { transform: rotate(-6deg); }
+  80%      { transform: rotate(4deg); }
+}
+
+/* 睡觉：身体微缩 + 持续轻微上下浮动（呼吸感） */
+@keyframes pet-sleep {
+  0%, 100% { transform: scale(0.85) translateY(0); }
+  50%      { transform: scale(0.85) translateY(-3px); }
+}
+
+/* 拜拜/退出：左右大幅挥手 */
+@keyframes pet-bye {
+  0%, 100% { transform: rotate(0deg); }
+  15%      { transform: rotate(-15deg); }
+  30%      { transform: rotate(15deg); }
+  45%      { transform: rotate(-12deg); }
+  60%      { transform: rotate(12deg); }
+  75%      { transform: rotate(-8deg); }
+}
+
+/* Zzz 字符浮动 —— 从角色头顶飘出，向上 + 渐隐 */
+@keyframes zzz-float {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.7); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(8px, -32px) scale(1.1); }
+}
+
+/* Zzz 元素：绝对定位在角色头顶右上 */
+.zzz {
+  position: absolute;
+  /* 角色右上角附近 —— 距 hitArea 右上角的相对位置 */
+  right: 0;
+  top: 0;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  color: #6b8eaf;
+  pointer-events: none;
+  z-index: 99;
+  user-select: none;
+}
+
+/* 睡觉时：切换到 pet-sleep.png（持续闭眼）
+ * 不再使用 CSS ::before/::after 画线 —— 改用真实 PNG
+ * （眯眼笑的 blink PNG 不适合睡眠，BFS 抠图 + arc 绘制的 pet-sleep.png 更准确）
+ */
+
+.zzz span {
+  display: inline-block;
+  margin-left: 2px;
+  animation: zzz-float 2.5s ease-out infinite;
+  opacity: 0;  /* 初始透明，由 keyframes 接管 */
+}
+
+.zzz span:nth-child(1) { animation-delay: 0s;   font-size: 12px; }
+.zzz span:nth-child(2) { animation-delay: 0.6s; font-size: 14px; }
+.zzz span:nth-child(3) { animation-delay: 1.2s; font-size: 16px; }
+.zzz span:nth-child(4) { animation-delay: 1.8s; font-size: 18px; }
+
+.pet {
+  /* 让变换围绕中心底部（避免上下跳动过大） */
+  transform-origin: center bottom;
+  /* 启用 GPU 加速：单独把 .pet 拉到独立图层 */
+  will-change: transform;
+  /* 默认就放慢过渡，让切换更顺 */
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;  /* 角色贴底 —— 缩小和开始菜单的间距 */
+  justify-content: center;
+  position: relative;       /* 作为气泡的定位锚点 */
+}
+
+/* 鼠标悬浮角色 —— 轻微放大 + 抬升，给反馈 */
+.pet.hovering {
+  /* 注意：只能和 idle/walk 等 transform 动画配合，不能和 shake/shrink 同帧 */
+  /* 因为 CSS animation 的 transform 会覆盖 transition 的 transform */
+  filter: brightness(1.08) drop-shadow(0 0 6px rgba(255, 200, 100, 0.5));
+}
+
+/* 拖拽 PNG 到窗口 —— 蓝色虚线框提示 */
+.pet.drop-hover {
+  outline: 3px dashed #4a90e2;
+  outline-offset: 4px;
+  filter: brightness(1.05);
+}
+
+/* 自定义 prompt 模态框 —— 替代 window.prompt(Electron 透明窗口不支持) */
+.pet-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  pointer-events: auto;  /* 覆盖窗口的鼠标穿透 */
+}
+
+.pet-modal-box {
+  background: #fff8e8;
+  border: 1px solid #c9a876;
+  border-radius: 10px;
+  padding: 16px 20px;
+  min-width: 280px;
+  max-width: 360px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+.pet-modal-q {
+  font-size: 13px;
+  color: #2a2018;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.pet-modal-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid #c9a876;
+  border-radius: 6px;
+  background: #fffefa;
+  outline: none;
+  font-family: inherit;
+  color: #2a2018;
+}
+
+.pet-modal-input:focus {
+  border-color: #4a90e2;
+}
+
+.pet-modal-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.pet-modal-btns button {
+  font-size: 12px;
+  padding: 5px 14px;
+  border-radius: 5px;
+  border: 1px solid #c9a876;
+  background: #fffefa;
+  color: #2a2018;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.pet-modal-btns button:hover {
+  background: #f5e9c8;
+}
+
+.pet-modal-ok {
+  background: #4a90e2 !important;
+  color: #fff !important;
+  border-color: #4a90e2 !important;
+}
+
+.pet-modal-ok:hover {
+  background: #357abd !important;
+}
+
+/* 飘爱心: 从指定位置向上飘,渐隐,1.6s */
+@keyframes heart-float {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.6); }
+  15%  { opacity: 1; transform: translate(0, -8px) scale(1.15); }
+  100% { opacity: 0; transform: translate(0, -120px) scale(0.9); }
+}
+
+.floating-heart {
+  position: fixed;
+  font-size: 24px;
+  pointer-events: none;
+  z-index: 50;
+  user-select: none;
+  animation: heart-float 1.6s ease-out forwards;
+  will-change: opacity, transform;
+}
+
+/* 气泡反馈按钮: ❤️ / ✕  */
+.bubble-fb {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(201, 168, 118, 0.3);
+}
+
+.bubble-fb button {
+  font-size: 13px;
+  width: 28px;
+  height: 22px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease;
+  pointer-events: auto;  /* 覆盖气泡的 no-events */
+}
+
+.bubble-fb button:hover {
+  background: rgba(255, 240, 200, 0.8);
+  border-color: rgba(201, 168, 118, 0.5);
+  transform: scale(1.1);
+}
+
+.bubble-fb button.clicked {
+  animation: fb-click 200ms ease-out;
+}
+
+@keyframes fb-click {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+.pet.shake  { animation: pet-shake 2s   cubic-bezier(0.34, 1.56, 0.64, 1); }
+.pet.shrink { animation: pet-shrink 1.6s cubic-bezier(0.4,  0,    0.2,  1); }
+.pet.walk   { animation: pet-walk 3s     cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+.pet.nod    { animation: pet-nod 0.8s   cubic-bezier(0.34, 1.56, 0.64, 1); }
+.pet.wave   { animation: pet-wave 1.0s  cubic-bezier(0.34, 1.56, 0.64, 1); }
+.pet.bye    { animation: pet-bye 1.5s   cubic-bezier(0.34, 1.56, 0.64, 1); }
+.pet.celebrate { animation: pet-celebrate 1.0s cubic-bezier(0.34, 1.56, 0.64, 1); will-change: transform; }
+.pet.sleep  {
+  animation: pet-sleep 2.4s ease-in-out infinite;
+  /* 睡眠时整体压暗 */
+  filter: brightness(0.85);
+}
+
+/* 命中区域 —— 接收鼠标事件。早期尝试用 PNG 当 mask 限制点击区(v1.7 之前),
+   但 pet.png 抠图后 alpha 有半透明,导致其他帧 mask 切到透明位置会缺角。
+   现在用整个 136x136 矩形接收事件,影响极小。
+   大小跟 petScale 一起缩。 */
+.hit-area {
+  width: calc(136px * var(--pet-scale, 1));
+  height: calc(136px * var(--pet-scale, 1));
+  position: relative;
+  overflow: hidden;  /* 让 overlay 不溢出 */
+  cursor: grab;      /* 鼠标在 hitArea 内显示 grab 光标 */
+}
+
+body.dragging .hit-area {
+  cursor: grabbing;
+}
+
+.hit-area > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* 保持 PNG 比例，避免被拉伸/裁切 */
+  object-position: center bottom; /* 贴底显示，避免头顶装饰被切 */
+  pointer-events: none; /* 不让 img 自己接收事件，统一交给 .hit-area */
+  -webkit-user-drag: none;
+}
+
+/* 鼠标互动 v1.10: 凑近 + 歪头 + 躲避 */
+
+/* 凑近: 桌宠朝鼠标方向微偏(主进程根据 mouse 位置发 IPC,renderer 加 class) */
+/* 注意: .pet 已经有 transition + transform-origin,这里直接改 transform */
+/* 但 breathe rAF 也会改 .pet.style.transform —— 我们用 CSS class 配 !important? */
+/* 简化: 不和 breathe 叠加,breathe 改 transform: scale(0.97-1.0),凑近改 translateX + rotate */
+/* 实现: 用独立 wrapper 或给 .pet 加 data-attr, breathe 读取时叠加 */
+body.approach-left .pet {
+  transform: translateX(-8px) rotate(-4deg) !important;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+body.approach-right .pet {
+  transform: translateX(8px) rotate(4deg) !important;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* 注意: 上面会覆盖 breathe 的 scale,我们需要 ensure breathe 还在跑 */
+/* 解决: 凑近状态时 breathe 跳过(由 JS 控制) */
+
+/* 歪头: 整体倾斜 12deg,1.2s 后回正 */
+body.tilt .pet {
+  transform: rotate(12deg) translateY(-4px) !important;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 节日气泡：JS 动态设置位置，长文本自动换行 */
+.bubble {
+  position: absolute;
+  background: rgba(255, 252, 240, 0.96);
+  color: #2a2018;
+  font-size: 11px;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  padding: 5px 10px;
+  border-radius: 12px;
+  white-space: normal;
+  word-break: break-word;
+  /* 固定宽度 140px（缩 85%），能容纳约 7-9 个汉字；超出自动换行。
+     宽度跟 petScale 缩放,保证长文本气泡按比例变化 */
+  width: calc(140px * var(--pet-scale, 1));
+  box-sizing: border-box;
+  text-align: center;
+  line-height: 1.4;
+  /* 不接事件,但 .bubble-fb 内部显式开启 (给 ❤️/✕ 用) */
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px) scale(0.96);  /* 默认位置：略下方 + 微缩 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 1px solid #c9a876;
+  z-index: 100;
+  /* 淡入淡出 + 轻微滑入动画 */
+  transition:
+    opacity 220ms ease-out,
+    transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* 让 GPU 单独合成气泡，避免触发 layout */
+  will-change: opacity, transform;
+}
+
+.bubble.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);  /* 滑入到位 + 恢复原尺寸 */
+}
+
+.bubble.hide {
+  opacity: 0;
+  transform: translateY(4px) scale(0.98);  /* 淡出：略向下收 */
+  transition:
+    opacity 180ms ease-in,
+    transform 200ms ease-in;
+}
+
+/* 尾巴：尖角朝左 —— 指向角色
+ * border triangle 规则：让哪边有色 = 三角形尖朝哪边
+ * 这里要尖朝左 = border-LEFT 有色，其他三边透明
+ * 但实际上实现"尖朝左"常做法的：
+ *   1. 元素放在气泡左外侧
+ *   2. 用 background-color 三角
+ * 简化：用 transform rotate 旋转方块最稳
+ */
+.bubble::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: -6px;
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 252, 240, 0.96);
+  border-left: 1px solid #c9a876;
+  border-bottom: 1px solid #c9a876;
+  /* rotate 45deg 让方块左下角（带边框的那个角）变成朝左的尖角 */
+  transform: translateY(6px) rotate(45deg);
+  transform-origin: center;
+}

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval';" />
+  <title>桌宠 · 设置</title>
+  <link rel="stylesheet" href="settings.css" />
+</head>
+<body>
+  <div class="settings-root">
+    <header class="settings-header">
+      <h1>⚙️ 桌宠设置</h1>
+      <div class="skin-preview" id="skinPreview">
+        <img id="skinPreviewImg" alt="当前皮肤预览" />
+        <div class="skin-name" id="skinName">加载中...</div>
+      </div>
+    </header>
+
+    <main>
+      <!-- 宠物档案 —— v1.8 拟人化基础 -->
+      <section class="settings-group" id="profileSection">
+        <h2>🐾 宠物档案</h2>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">姓名</div>
+            <div class="setting-desc">1-10 字,显示在气泡/托盘/菜单</div>
+          </div>
+          <div class="setting-control">
+            <input type="text" id="petName" maxlength="10" placeholder="比如:小布、团团" class="text-input" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" />
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">生日</div>
+            <div class="setting-desc">公历,用于生日气泡和周年纪念</div>
+          </div>
+          <div class="setting-control">
+            <select id="petBirthMonth" class="num-input">
+              <option value="0">月</option>
+              <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+              <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+              <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+              <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+            </select>
+            <select id="petBirthDay" class="num-input">
+              <option value="0">日</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">星座</div>
+            <div class="setting-desc">设置生日后自动推导,可手改</div>
+          </div>
+          <div class="setting-control">
+            <select id="petZodiac" class="text-input">
+              <option value="">未设置</option>
+              <option>白羊座</option><option>金牛座</option><option>双子座</option>
+              <option>巨蟹座</option><option>狮子座</option><option>处女座</option>
+              <option>天秤座</option><option>天蝎座</option><option>射手座</option>
+              <option>摩羯座</option><option>水瓶座</option><option>双鱼座</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">性别</div>
+            <div class="setting-desc">影响气泡里的自称语气</div>
+          </div>
+          <div class="setting-control">
+            <div class="seg" id="petGenderSeg">
+              <button data-val="female">女</button>
+              <button data-val="male">男</button>
+              <button data-val="other">其他</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">MBTI</div>
+            <div class="setting-desc">16 型人格(可选)</div>
+          </div>
+          <div class="setting-control">
+            <select id="petMbti" class="text-input">
+              <option value="">未设置</option>
+              <option>ISTJ</option><option>ISFJ</option><option>INFJ</option><option>INTJ</option>
+              <option>ISTP</option><option>ISFP</option><option>INFP</option><option>INTP</option>
+              <option>ESTP</option><option>ESFP</option><option>ENFP</option><option>ENTP</option>
+              <option>ESTJ</option><option>ESFJ</option><option>ENFJ</option><option>ENTJ</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 档案操作区: 编辑/保存/取消 + 重置 -->
+        <div class="profile-actions">
+          <button id="profileReset" class="btn-ghost" title="清空姓名/生日/星座/性别/MBTI">🗑️ 重置档案</button>
+          <div class="profile-actions-right">
+            <span id="profileDirtyHint" class="dirty-hint" hidden>● 有未保存修改</span>
+            <button id="profileEdit" class="btn-primary">✏️ 编辑</button>
+            <button id="profileCancel" class="btn-ghost" hidden>取消</button>
+            <button id="profileSave" class="btn-primary" hidden>💾 保存</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 天气播报 —— v1.9.1 改为 IP 自动定位 + 手动覆盖 -->
+      <section class="settings-group" id="weatherSection">
+        <h2>🌤️ 天气播报</h2>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">当前位置</div>
+            <div class="setting-desc">根据 IP 自动定位（启动问候时）</div>
+          </div>
+          <div class="setting-control">
+            <div class="loc-info">
+              <div id="weatherLocDisplay" class="loc-display">未定位</div>
+              <button id="weatherRelocateBtn" class="btn-ghost btn-small" title="重新获取 IP 定位">📍 重新定位</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">手动覆盖城市</div>
+            <div class="setting-desc">填了优先用填的城市(不填走 IP 定位)</div>
+          </div>
+          <div class="setting-control">
+            <input type="text" id="weatherCity" maxlength="20" placeholder="留空走 IP 定位" class="text-input" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" />
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">启用天气</div>
+            <div class="setting-desc">启动问候时附带今日天气</div>
+          </div>
+          <div class="setting-control">
+            <label class="switch">
+              <input type="checkbox" id="weatherEnabled" />
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- TTS 朗读 —— v1.11 (v1.11.5 临时隐藏,等后续版本优化后展示) -->
+      <section class="settings-group" id="ttsSection" hidden>
+        <h2>🔊 气泡朗读 (TTS)</h2>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">启用朗读</div>
+            <div class="setting-desc">气泡出现时自动朗读内容(5s 冷却)</div>
+          </div>
+          <div class="setting-control">
+            <label class="switch">
+              <input type="checkbox" id="ttsEnabled" />
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">语速</div>
+            <div class="setting-desc">0.5 慢 — 1.0 中 — 2.0 快</div>
+          </div>
+          <div class="setting-control">
+            <input type="range" id="ttsRate" min="0.5" max="2.0" step="0.1" value="1.0" />
+            <span id="ttsRateLabel" class="range-value">1.0x</span>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">音调</div>
+            <div class="setting-desc">0 低 — 1.0 中 — 2 高</div>
+          </div>
+          <div class="setting-control">
+            <input type="range" id="ttsPitch" min="0" max="2.0" step="0.1" value="1.0" />
+            <span id="ttsPitchLabel" class="range-value">1.0</span>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">声音偏好</div>
+            <div class="setting-desc">默认根据宠物档案的性别自动选</div>
+          </div>
+          <div class="setting-control">
+            <div class="seg" id="ttsGenderSeg">
+              <button data-val="auto">跟随性别</button>
+              <button data-val="female">女声</button>
+              <button data-val="male">男声</button>
+              <button data-val="custom">自定义</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-row" id="ttsCustomRow" hidden>
+          <div class="setting-label">
+            <div class="setting-title">自定义声音名</div>
+            <div class="setting-desc">填入 TTS 引擎里的声音名(如 Yunyang / Xiaoxiao)</div>
+          </div>
+          <div class="setting-control">
+            <input type="text" id="ttsCustomVoice" maxlength="40" placeholder="Yunyang" class="text-input" />
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">测试</div>
+            <div class="setting-desc">听一下当前声音效果</div>
+          </div>
+          <div class="setting-control">
+            <button id="ttsTestBtn" class="btn-ghost">🔊 试听</button>
+          </div>
+        </div>
+      </section>
+      <!-- /TTS (hidden) -->
+
+      <!-- 定时通知 —— v1.13 -->
+      <section class="settings-group" id="notifSection">
+        <h2>⏰ 定时通知</h2>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">🍅 番茄钟</div>
+            <div class="setting-desc">工作 25min + 休息 5min 循环,到点气泡提醒</div>
+          </div>
+          <div class="setting-control">
+            <label class="switch">
+              <input type="checkbox" id="notifPomodoro" />
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">🍅 工作时长</div>
+            <div class="setting-desc">15 - 60 分钟</div>
+          </div>
+          <div class="setting-control">
+            <input type="range" id="notifWorkMin" min="15" max="60" step="5" value="25" />
+            <span id="notifWorkMinLabel" class="range-value">25 min</span>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">☕ 休息时长</div>
+            <div class="setting-desc">3 - 15 分钟</div>
+          </div>
+          <div class="setting-control">
+            <input type="range" id="notifRestMin" min="3" max="15" step="1" value="5" />
+            <span id="notifRestMinLabel" class="range-value">5 min</span>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">💧 喝水提醒</div>
+            <div class="setting-desc">每小时气泡提醒喝水</div>
+          </div>
+          <div class="setting-control">
+            <label class="switch">
+              <input type="checkbox" id="notifHydration" />
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">💧 喝水间隔</div>
+            <div class="setting-desc">30 - 180 分钟</div>
+          </div>
+          <div class="setting-control">
+            <input type="range" id="notifHydrationMin" min="30" max="180" step="15" value="60" />
+            <span id="notifHydrationMinLabel" class="range-value">60 min</span>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">🪑 久坐提醒</div>
+            <div class="setting-desc">每小时气泡提醒起来活动</div>
+          </div>
+          <div class="setting-control">
+            <label class="switch">
+              <input type="checkbox" id="notifSedentary" />
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">🪑 久坐间隔</div>
+            <div class="setting-desc">30 - 180 分钟</div>
+          </div>
+          <div class="setting-control">
+            <input type="range" id="notifSedentaryMin" min="30" max="180" step="15" value="60" />
+            <span id="notifSedentaryMinLabel" class="range-value">60 min</span>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">📊 今日完成</div>
+            <div class="setting-desc" id="notifPomodoroToday">今日完成 0 个番茄</div>
+          </div>
+          <div class="setting-control">
+            <button id="notifStartBtn" class="btn-primary">🍅 开始番茄钟</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 基础设置 -->
+      <section class="settings-group">
+        <h2>基础设置</h2>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">气泡频率</div>
+            <div class="setting-desc">闲置多久自动出一个气泡</div>
+          </div>
+          <div class="setting-control">
+            <div class="seg" id="freqSeg">
+              <button data-val="low">低</button>
+              <button data-val="normal">中</button>
+              <button data-val="high">高</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">打字机速度</div>
+            <div class="setting-desc">每个字的间隔（毫秒）</div>
+          </div>
+          <div class="setting-control">
+            <input type="range" id="typingSpeed" min="30" max="150" step="5" />
+            <div class="slider-value" id="typingSpeedVal">65 ms</div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">气泡词库</div>
+            <div class="setting-desc">切换不同主题的金句库</div>
+          </div>
+          <div class="setting-control">
+            <div class="seg" id="themeSeg">
+              <button data-val="mayday">五月天</button>
+              <button data-val="default">日常</button>
+              <button data-val="classical">古风</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 系统设置 -->
+      <section class="settings-group">
+        <h2>系统设置</h2>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">开机自启</div>
+            <div class="setting-desc">登录 Windows 后自动启动桌宠</div>
+          </div>
+          <div class="setting-control">
+            <label class="toggle">
+              <input type="checkbox" id="autoLaunch" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">记住窗口位置</div>
+            <div class="setting-desc">关闭再开还会在原位</div>
+          </div>
+          <div class="setting-control">
+            <label class="toggle">
+              <input type="checkbox" id="rememberPosition" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-title">桌宠尺寸</div>
+            <div class="setting-desc">80% - 120% 缩放</div>
+          </div>
+          <div class="setting-control">
+            <input type="range" id="petScale" min="0.8" max="1.2" step="0.05" />
+            <div class="slider-value" id="petScaleVal">100%</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 互动统计 -->
+      <section class="settings-group">
+        <h2>互动统计</h2>
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-card">
+            <div class="stat-num" id="statClicks">0</div>
+            <div class="stat-label">总点击</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statDrags">0</div>
+            <div class="stat-label">拖动</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statBubbles">0</div>
+            <div class="stat-label">气泡</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statDays">0</div>
+            <div class="stat-label">活跃天数</div>
+          </div>
+        </div>
+        <div class="level-banner" id="levelBanner">
+          <div class="level-icon">🌱</div>
+          <div class="level-text">
+            <div class="level-name" id="levelName">初识</div>
+            <div class="level-progress">
+              <div class="level-bar"><div class="level-fill" id="levelFill"></div></div>
+              <div class="level-tip" id="levelTip">距离下一级还差 0 次互动</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="settings-footer">
+      <span class="hint">设置自动保存</span>
+      <button id="resetBtn" class="btn-danger">重置所有数据</button>
+    </footer>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>

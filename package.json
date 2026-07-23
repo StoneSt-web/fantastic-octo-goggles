@@ -1,0 +1,72 @@
+{
+  "name": "desktop-pet",
+  "version": "1.0.0",
+  "description": "A cute desktop pet (Win/macOS) built with Electron — 桌宠 v1.0",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "bake": "node scripts/bake-png.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac"
+  },
+  "author": "desktop-pet contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/StoneSt-web/fantastic-octo-goggles.git"
+  },
+  "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "edge-tts-universal": "^1.4.0",
+    "sound-play": "^1.1.0",
+    "uuid": "^14.0.1",
+    "ws": "^8.21.0"
+  },
+  "build": {
+    "appId": "com.desktoppet.app",
+    "productName": "桌面宠物",
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "skins/**/*",
+      "scripts/**/*",
+      "package.json",
+      "!**/.DS_Store"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "桌面宠物"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.entertainment"
+    }
+  }
+}

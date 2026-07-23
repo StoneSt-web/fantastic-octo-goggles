@@ -1,0 +1,10 @@
+{
+  "requests": [
+    {
+      "prompt": "Preserve the EXACT character from the input image. Make ONLY one change: change the mouth to a singing open-mouth shape (oval or rounded opening with a dark red interior and small white teeth or tongue detail), as if the character is singing a song. Eyes stay open exactly as in input. Keep everything else identical: bamboo hat, hat braiding, dragon face on hat, orange face, eyes, leaves, green body, brown rope belt, Chinese knot, red tassel. Do NOT add any music notes, sparkles, or extra decorations. Output as clean PNG with transparent background.",
+      "input_files": ["F:\\MinMax Code\\0629\\desktop-pet\\assets\\pet.png"],
+      "aspect_ratio": "1:1",
+      "resolution": "2K"
+    }
+  ]
+}

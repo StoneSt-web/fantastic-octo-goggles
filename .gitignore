@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+out/
+
+# Electron cache
+.electron-cache/
+
+# User settings (含个人偏好 + 档案 + 统计)
+settings.json
+
+# Logs
+*.log
+stdout.log
+stderr.log
+
+# Dev / debug 残留
+test-yunyang.mp3
+test-*.mp3
+test-write.js
+debug-state.json
+cu-screenshot-args.json
+test-matrix.json
+clean-mcafee-logs.bat
+clean-mcafee-logs.ps1
+
+# OS 临时
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Env
+.env
+.env.local
+
+# Cache
+.cache/
+*.tmp

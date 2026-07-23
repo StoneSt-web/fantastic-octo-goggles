@@ -1,0 +1,10 @@
+{
+  "requests": [
+    {
+      "prompt": "Preserve the EXACT character from the input image. Make ONLY one change: change the mouth to a small round surprised O-shape (a tiny circular dark opening), with the eyes staying wide open exactly as in input. Keep everything else identical: bamboo hat, hat braiding, dragon face on hat, orange face, eyes, leaves, green body, brown rope belt, Chinese knot, red tassel. Do NOT add any music notes, sparkles, or extra decorations. Output as clean PNG with transparent background.",
+      "input_files": ["F:\\MinMax Code\\0629\\desktop-pet\\assets\\pet.png"],
+      "aspect_ratio": "1:1",
+      "resolution": "2K"
+    }
+  ]
+}

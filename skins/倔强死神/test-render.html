@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 425px;
+    height: 204px;
+    background: linear-gradient(135deg, #67c3eb 0%, #4a90e2 100%);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .pet {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    position: relative;
+  }
+  .hit-area {
+    width: 136px;
+    height: 136px;
+    position: relative;
+    overflow: hidden;
+    cursor: grab;
+  }
+  .hit-area > img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center bottom;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+  /* 调试用红框 */
+  .hit-area {
+    outline: 2px solid red;
+  }
+</style>
+</head>
+<body>
+  <div class="pet">
+    <div class="hit-area" id="hitArea">
+      <img id="petImg" alt="pet" draggable="false" src="file:///F:/MinMax%20Code/0629/desktop-pet/skins/%E6%AD%BB%E7%A5%9E%E5%80%94%E5%BC%BA%E5%8D%9C/frames/pet-sing.png" />
+    </div>
+  </div>
+</body>
+</html>

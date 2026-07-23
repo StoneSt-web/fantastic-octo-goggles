@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #67c3eb 0%, #4a90e2 100%);
+    width: 425px;
+    height: 204px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .hit-area {
+    width: 136px;
+    height: 136px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid red; /* 调试：标出 hit-area 边界 */
+  }
+  .hit-area > img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center bottom;
+    display: block;
+  }
+</style>
+</head>
+<body>
+  <div class="hit-area">
+    <img src="file:///F:/MinMax%20Code/0629/desktop-pet/skins/%E6%AD%BB%E7%A5%9E%E5%80%94%E5%BC%BA%E5%8D%9C/frames/pet-sing.png" />
+  </div>
+</body>
+</html>

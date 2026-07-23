@@ -1,0 +1,10 @@
+{
+  "requests": [
+    {
+      "prompt": "Preserve the EXACT character from the input image. Make ONLY one change: change the two open eyes to CLOSED sleeping eyes (two simple curved lines, peaceful sleeping expression like ^^). The mustache mouth (a black wavy M-shape line below the eyes) and the red tongue/teeth detail below it MUST be kept EXACTLY as in the input image, do not modify or remove. Keep everything else identical: bamboo hat, hat braiding, dragon face on hat, orange face, red ribbon, leaves, green body, brown rope belt, Chinese knot, red tassel. Output as clean PNG with transparent background.",
+      "input_files": ["F:\\MinMax Code\\0629\\desktop-pet\\assets\\pet.png"],
+      "aspect_ratio": "1:1",
+      "resolution": "2K"
+    }
+  ]
+}
