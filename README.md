@@ -1,4 +1,4 @@
-# 🐾 桌面宠物 Desktop Pet
+# 🐾 WMLS的桌面伴侣 Desktop Pet
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/StoneSt-web/fantastic-octo-goggles)](https://github.com/StoneSt-web/fantastic-octo-goggles/releases/latest)
 [![GitHub downloads](https://img.shields.io/github/downloads/StoneSt-web/fantastic-octo-goggles/total)](https://github.com/StoneSt-web/fantastic-octo-goggles/releases)
