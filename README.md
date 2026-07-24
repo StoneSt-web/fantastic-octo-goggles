@@ -49,15 +49,23 @@ npm start
 
 ## 📸 截图
 
-> 截图都放在 `docs/screenshots/`。生成方式见文末「截图指南」。
+> 截图都放在 `docs/screenshots/`。动态截图待补,先用 pet 形象占位。
+
+### 🎨 3 套皮肤一览
+
+| 端午卜(默认) | 阳光天使 | 倔强死神 |
+|---|---|---|
+| ![zongzi](docs/screenshots/01-pet-zongzi.png) | ![angel](docs/screenshots/02-pet-angel.png) | ![shinigami](docs/screenshots/03-pet-shinigami.png) |
+
+### 动态效果(待补截图/GIF)
 
 | 主界面 | 鼠标凑近 | 切换皮肤 |
 |---|---|---|
-| ![main](docs/screenshots/01-main.png) | ![hover](docs/screenshots/02-hover.png) | ![skin](docs/screenshots/03-skin.png) |
+| _待补_ | _待补_ | _待补_ |
 
 | 气泡 | 番茄钟 | 设置面板 |
 |---|---|---|
-| ![bubble](docs/screenshots/04-bubble.png) | ![pomodoro](docs/screenshots/05-pomodoro.png) | ![settings](docs/screenshots/06-settings.png) |
+| _待补_ | _待补_ | _待补_ |
 
 ---
 
@@ -234,20 +242,20 @@ PR 欢迎 — 当前 macOS 仅做了构建,没在真机实测过。
 
 ## 📸 截图生成指南
 
-新加了这个 section,方便你后期补图:
-
 ```bash
 # 1. 录 GIF(推荐用 ScreenToGif 或 Kap)
 #    - 启动桌宠 → 移动 + 点击 + 切换皮肤 → 录 5-10 秒
 #    - 存为 docs/demo.gif
 
-# 2. 截静态图(Win+Shift+S 或 Cmd+Shift+4)
-#    - 01-main.png    — 桌宠空闲状态
-#    - 02-hover.png   — 鼠标凑近(展示歪头/躲闪)
-#    - 03-skin.png    — 切换到「阳光天使」
-#    - 04-bubble.png  — 出气泡
-#    - 05-pomodoro.png — 番茄钟工作时间
-#    - 06-settings.png — 设置窗口
+# 2. 动态截图(Win+Shift+S 或 Cmd+Shift+4)
+#    - 04-main.png       — 桌宠空闲
+#    - 05-hover.png      — 鼠标凑近
+#    - 06-skin.png       — 切换皮肤过渡
+#    - 07-bubble.png     — 出气泡
+#    - 08-pomodoro.png   — 番茄钟工作
+#    - 09-settings.png   — 设置窗口
+
+# 注意:01-03 已被 pet.png 占用,动态截图从 04 开始命名
 ```
 
 放在 `docs/screenshots/` 目录,README 里的图片链接自动生效。
