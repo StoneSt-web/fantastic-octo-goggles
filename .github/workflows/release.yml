@@ -39,10 +39,11 @@ jobs:
       # 7z on Windows 默认解压会试图给 darwin 平台的 .dylib 建 symlink,
       # 但 GitHub Actions Windows runner 缺 SeCreateSymbolicLinkPrivilege → 失败.
       # 解决方案: 先用 7z 的 -snld(skip symlink dereference)自己解,让 symlink 变普通文件.
-      # Windows runner 默认没装 7z,先用 action 装.
-      - name: Install 7-Zip (Windows only)
+      # Windows runner 默认没装 7z,先用 choco 装(GitHub Windows runner 自带 choco + admin).
+      - name: Install 7-Zip via chocolatey (Windows only)
         if: matrix.os == 'windows-latest'
-        uses: kiedtl/7zip-windows@v1
+        shell: pwsh
+        run: choco install 7zip -y --no-progress --source="'https://chocolatey.org/api/v2'"
 
       - name: Pre-extract winCodeSign (bypass symlink permission)
         if: matrix.os == 'windows-latest'
@@ -58,8 +59,7 @@ jobs:
             Invoke-WebRequest -Uri $url -OutFile $archive -UseBasicParsing
             New-Item -ItemType Directory -Path $wcPath -Force | Out-Null
             # -snld: 不解析 symlink,把符号链接当普通文件解压 (避免权限报错)
-            $sevenZip = Get-Command 7z -ErrorAction Stop
-            & $sevenZip.Source x $archive "-o$wcPath" -y -snld | Out-Null
+            & 7z x $archive "-o$wcPath" -y -snld | Out-Null
             Write-Host "  -> $wcPath"
           }
 
