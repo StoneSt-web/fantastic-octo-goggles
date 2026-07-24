@@ -48,6 +48,9 @@ jobs:
       - name: Pre-extract winCodeSign (bypass symlink permission)
         if: matrix.os == 'windows-latest'
         shell: pwsh
+        env:
+          # 这步需要 mirror URL,Build 步骤的 env 不会自动传过来
+          ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
         run: |
           $cache = "$env:LOCALAPPDATA\electron-builder\Cache"
           $ver = "2.6.0"
