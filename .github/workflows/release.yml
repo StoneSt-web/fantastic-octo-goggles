@@ -36,9 +36,33 @@ jobs:
       # icon.ico + iconset/ 已经在 git 里(手动生成,已 commit),不需要重新跑 Python 脚本
       # 如果改了皮肤,记得本地跑 `python scripts/make-app-icon.py` 后再 commit
 
+      # 7z on Windows 默认解压会试图给 darwin 平台的 .dylib 建 symlink,
+      # 但 GitHub Actions Windows runner 缺 SeCreateSymbolicLinkPrivilege → 失败.
+      # 解决方案: 先用 7z 的 -snld(skip symlink dereference)自己解,让 symlink 变普通文件.
+      - name: Pre-extract winCodeSign (bypass symlink permission)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $cache = "$env:LOCALAPPDATA\electron-builder\Cache"
+          $ver = "2.6.0"
+          $wcPath = "$cache\winCodeSign\$ver"
+          $url = "$env:ELECTRON_BUILDER_BINARIES_MIRROR/winCodeSign-$ver/winCodeSign-$ver.7z"
+          $archive = "$env:RUNNER_TEMP\winCodeSign-$ver.7z"
+          if (-not (Test-Path "$wcPath\darwin")) {
+            Write-Host "Pre-extracting winCodeSign v$ver to bypass symlink issue..."
+            Invoke-WebRequest -Uri $url -OutFile $archive -UseBasicParsing
+            New-Item -ItemType Directory -Path $wcPath -Force | Out-Null
+            # -snld: 不解析 symlink,把符号链接当普通文件解压 (避免权限报错)
+            & 7z x $archive "-o$wcPath" -y -snld | Out-Null
+            Write-Host "  -> $wcPath"
+          }
+
+      # electron-builder 看到 tag v* 会自动尝试 publish 到 GitHub,
+      # 但 workflow 自己用 softprops/action-gh-release 发 release,重复 + 权限不足(403).
+      # --publish never: 只打包,不让 electron-builder publish.
       - name: Build (Windows)
         if: matrix.os == 'windows-latest'
-        run: npm run dist:win
+        run: npm run dist:win -- --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
@@ -48,7 +72,7 @@ jobs:
 
       - name: Build (macOS)
         if: matrix.os == 'macos-latest'
-        run: npm run dist:mac
+        run: npm run dist:mac -- --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
