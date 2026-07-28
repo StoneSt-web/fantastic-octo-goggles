@@ -271,8 +271,16 @@ function switchSkinMain(skinId, source) {
   console.log(`[main] ${source} switch-skin click: ${skinId} (current=${activeSkinId})`);
   if (skinId === activeSkinId) return { ok: false, reason: 'same' };
   try {
-    applySkin(skinId);
-    bake();
+    // 打包后 asar 只读,applySkin 写 assets/ 会失败 → 包 try/catch 让默认皮肤继续能用
+    if (!app.isPackaged) {
+      applySkin(skinId);
+    }
+    // bake() 返回 content 字符串,直接用(打包后 write=false 避免写 asar)
+    // 源目录:dev 用 assets/,packaged 用 skins/<id>/frames/(直接读 asar 内)
+    const sourceDir = app.isPackaged
+      ? path.join(__dirname, '..', 'skins', skinId, 'frames')
+      : undefined;  // undefined = 用默认 ASSETS
+    const framesContent = bake({ write: !app.isPackaged, sourceDir });
   } catch (e) {
     // 严格校验 tray-icon 后,缺失会抛错 —— 必须 catch,
     // 否则整个 click handler 中断(settings.write / 推送 / 托盘重建 都不执行)
@@ -285,8 +293,6 @@ function switchSkinMain(skinId, source) {
 
   // 推送新 frames-embed.js 到 renderer（不 reload 避免窗口闪烁）
   if (petWindow && !petWindow.isDestroyed()) {
-    const framesPath = path.join(__dirname, 'renderer', 'frames-embed.js');
-    const framesContent = fs.readFileSync(framesPath, 'utf8');
     console.log(`[main] send pet:skin-changed skinId=${skinId}, framesContent size=${framesContent.length}`);
     petWindow.webContents.send('pet:skin-changed', { skinId, framesContent });
   } else {
@@ -354,9 +360,16 @@ ipcMain.handle('pet:install-skin', async (_evt, { name, pngBase64 }) => {
     return { ok: false, error: 'tray-icon 生成失败:' + (py.stderr || '').slice(0, 200) };
   }
   // bake + 切到新皮肤
+  // 打包后 asar 只读,applySkin 写 assets/ 会失败 → 跳过;用 bake() 内存内容 IPC 推送
+  let framesContent;
   try {
-    applySkin(skinId);
-    bake();
+    if (!app.isPackaged) {
+      applySkin(skinId);
+    }
+    const sourceDir = app.isPackaged
+      ? path.join(__dirname, '..', 'skins', skinId, 'frames')
+      : undefined;
+    framesContent = bake({ write: !app.isPackaged, sourceDir });
   } catch (e) {
     return { ok: false, error: e.message };
   }
@@ -364,8 +377,6 @@ ipcMain.handle('pet:install-skin', async (_evt, { name, pngBase64 }) => {
   activeSkinId = skinId;
   // 推送新 frames
   if (petWindow && !petWindow.isDestroyed()) {
-    const framesPath = path.join(__dirname, 'renderer', 'frames-embed.js');
-    const framesContent = fs.readFileSync(framesPath, 'utf8');
     petWindow.webContents.send('pet:skin-changed', { skinId, framesContent });
   }
   // 重建托盘
@@ -1222,8 +1233,11 @@ ipcMain.handle('pet:reset-window-focus', () => {
 // ============================================================
 app.whenReady().then(() => {
   // 启动时确保 assets/ 反映当前激活皮肤
-  applySkin(activeSkinId);
-  bake();
+  // 打包后 asar 只读,跳过(electron-builder 已经把 frames-embed.js 打进 asar)
+  if (!app.isPackaged) {
+    applySkin(activeSkinId);
+    bake();
+  }
   createPetWindow();
   createTray();
   // 启动后用 petProfile.name 刷新托盘 tooltip(默认'桌宠')

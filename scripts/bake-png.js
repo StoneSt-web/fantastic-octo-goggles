@@ -121,7 +121,10 @@ function listSkins() {
 
 // 把 PNG 转 base64 写入 frames-embed.js
 // tray-icon 不进 frames-embed（系统托盘走文件路径，不是 base64）
-function bake() {
+// 返回 content 字符串(供 main.js 在打包后直接用,不用读盘)
+// write=true 才会落盘(默认 true,packaged 模式由 main.js 传 false)
+// sourceDir 决定 PNG 从哪里读(默认 ASSETS,packaged 切皮肤传 skins/<id>/frames)
+function bake({ write = true, sourceDir = ASSETS } = {}) {
   // 校验 tray-icon 存在且是合法 PNG(否则 Windows 任务栏无图标)
   try {
     const info = validateTrayIcon();
@@ -135,10 +138,10 @@ function bake() {
   lines.push('window.PET_FRAMES = {');
   for (const f of FRAMES) {
     if (f.name === 'tray-icon') continue;  // tray-icon 跳过 base64 打包
-    const fp = path.join(ASSETS, f.file);
+    const fp = path.join(sourceDir, f.file);
     if (!fs.existsSync(fp)) {
       // 同 applySkin: 用 console.log 不是 warn,避免 Node exit code = 1
-      console.log(`  [skip, optional] ${f.name} not in assets`);
+      console.log(`  [skip, optional] ${f.name} not in ${sourceDir}`);
       continue;
     }
     const b64 = fs.readFileSync(fp).toString('base64');
@@ -146,9 +149,19 @@ function bake() {
   }
   lines.push('};');
   lines.push('');
-  fs.writeFileSync(OUT, lines.join('\n'));
-  const sizes = FRAMES.map(f => `${f.name}=${fs.existsSync(path.join(ASSETS, f.file)) ? fs.statSync(path.join(ASSETS, f.file)).size : 0}`).join(', ');
-  console.log(`baked: ${sizes} -> ${OUT}`);
+  const content = lines.join('\n');
+  if (write) {
+    try {
+      fs.writeFileSync(OUT, content);
+      const sizes = FRAMES.map(f => `${f.name}=${fs.existsSync(path.join(ASSETS, f.file)) ? fs.statSync(path.join(ASSETS, f.file)).size : 0}`).join(', ');
+      console.log(`baked: ${sizes} -> ${OUT}`);
+    } catch (e) {
+      // 打包后 asar 是只读,写失败但内容已经在内存里
+      // 让 main.js 决定怎么处理(直接用 content,不再依赖磁盘文件)
+      console.warn(`[bake WARN] writeFileSync failed (likely packaged asar): ${e.message}`);
+    }
+  }
+  return content;
 }
 
 // CLI
@@ -168,7 +181,13 @@ if (args.includes('--list')) {
   console.log('available skins:');
   for (const s of listSkins()) console.log(`  ${s}`);
 }
-bake();
+
+// 只在作为 CLI 直接调用时跑 bake():
+//  避免 main.js 一 require 这个文件就触发写文件
+//  (打包后 app.asar 是只读,会 crash)
+if (require.main === module) {
+  bake();
+}
 
 // 导出供 main.js 调用
 module.exports = { listSkins, applySkin, bake };
