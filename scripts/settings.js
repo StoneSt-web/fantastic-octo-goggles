@@ -2,7 +2,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const SETTINGS_PATH = path.join(__dirname, '..', 'settings.json');
+// 默认:开发模式写在项目根(settings.json 跟 package.json 同级)
+// 打包后 main.js 在 app.whenReady 调 setPath(),改成 userData
+// (resources/app.asar/ 是只读,写不进去)
+let SETTINGS_PATH = path.join(__dirname, '..', 'settings.json');
+function setPath(newPath) {
+  SETTINGS_PATH = newPath;
+}
 
 const DEFAULT_SETTINGS = {
   activeSkin: '阳光天使',
@@ -183,4 +189,4 @@ function stat(op) {
   return write({ stats });
 }
 
-module.exports = { read, write, stat, SETTINGS_PATH, DEFAULT_SETTINGS };
+module.exports = { read, write, stat, setPath, SETTINGS_PATH: () => SETTINGS_PATH, DEFAULT_SETTINGS };

@@ -13,6 +13,11 @@ const { URL } = require('url');
 const settings = require('../scripts/settings');
 const { listSkins, applySkin, bake } = require('../scripts/bake-png');
 
+// v1.0.2 修复:打包后 app.asar 只读,settings.json 不能写进 asar
+// 必须把 settings 写到 userData(C:\Users\<u>\AppData\Roaming\desktop-pet\)
+// 注意:必须在任何 settings.write() 之前调,否则顶部迁移/fallback 会写炸
+settings.setPath(path.join(app.getPath('userData'), 'settings.json'));
+
 let petWindow = null;
 let tray = null;
 // 标记：用户是否主动"退出"（区分"关闭窗口"和"退出应用"）
@@ -1199,8 +1204,8 @@ ipcMain.handle('pet:save-window-pos', (_evt, pos) => {
 // 重置所有数据 —— unlink settings.json 让下次 read() 走默认
 ipcMain.handle('pet:reset-all', () => {
   try {
-    if (fs.existsSync(settings.SETTINGS_PATH)) {
-      fs.unlinkSync(settings.SETTINGS_PATH);
+    if (fs.existsSync(settings.SETTINGS_PATH())) {
+      fs.unlinkSync(settings.SETTINGS_PATH());
     }
     return { ok: true };
   } catch (e) {

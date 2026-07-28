@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-07-28
+
+### 🐛 修复
+
+- **切皮肤/写设置时崩溃**: `settings.js` 默认写 `项目根/settings.json`,但 packaged 模式指向 `app.asar/settings.json`,asar 只读导致 `fs.writeFileSync` 抛 ENOENT,任何切皮肤操作都会触发主进程未捕获异常。
+  - 修复: `settings.js` 加 `setPath(newPath)` setter,`SETTINGS_PATH` 改为 `let` + getter
+  - 修复: `main.js` 顶部 require settings 后立即 `settings.setPath(app.getPath('userData'))`
+  - 修复: `pet:reset-all` handler 改用 `settings.SETTINGS_PATH()` 调 getter
+
+## [1.0.1] - 2026-07-28
+
+### 🐛 修复
+
+- **v1.0.0 启动崩溃**: `bake-png.js` 模块顶层 `bake()` 在 `main.js` require 时立即执行,尝试 `fs.writeFileSync` 写入 `app.asar/src/renderer/frames-embed.js`,asar 只读导致 ENOENT,主进程直接 crash。
+  - 修复: `bake-png.js:171` 加 `if (require.main === module)` 守护,只允许 CLI 直接调用时跑
+  - 修复: `bake()` 改返回 content 字符串,新增 `write` / `sourceDir` 参数
+  - 修复: `main.js` startup/switchSkin/installSkin 全部加 `!app.isPackaged` 守护
+
 ## [1.0.0] - 2026-07-22
 
 ### 🎉 首个稳定版本
