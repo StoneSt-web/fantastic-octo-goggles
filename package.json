@@ -1,6 +1,6 @@
 {
   "name": "desktop-pet",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A cute desktop pet (Win/macOS) built with Electron — 桌宠 v1.0",
   "main": "src/main.js",
   "scripts": {
