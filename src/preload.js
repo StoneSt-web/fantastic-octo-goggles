@@ -60,10 +60,9 @@ contextBridge.exposeInMainWorld('petAPI', {
   getWeather: (location) => ipcRenderer.invoke('pet:get-weather', location),
   // IP 定位 —— v1.9.1 自动获取当前所在地
   getIpLocation: () => ipcRenderer.invoke('pet:get-ip-location'),
-  // TTS —— v1.11.5: 主进程合成 + 播放(不走 renderer audio,绕开 transparent window audio 限制)
-  ttsSpeak: (text, opts) => ipcRenderer.invoke('pet:tts-speak', text, opts || {}),
-  // 推荐 voice 列表(settings dropdown 用)
-  ttsListVoices: () => ipcRenderer.invoke('pet:tts-list-voices'),
+  // v1.0.3: TTS 已禁用,移除 expose
+  // ttsSpeak: (text, opts) => ipcRenderer.invoke('pet:tts-speak', text, opts || {}),
+  // ttsListVoices: () => ipcRenderer.invoke('pet:tts-list-voices'),
   // v1.13 定时通知(番茄钟/喝水/久坐)
   notifStartPomodoro: () => ipcRenderer.invoke('pet:notif-start-pomodoro'),
   notifStopPomodoro: () => ipcRenderer.invoke('pet:notif-stop-pomodoro'),

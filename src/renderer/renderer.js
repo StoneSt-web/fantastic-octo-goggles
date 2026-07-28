@@ -392,22 +392,24 @@ const FESTIVAL_GREETINGS = {
       const defaultSpeed = (window._prefs && window._prefs.typingSpeed) || 65;
       // 默认 allowFeedback=false —— 只有五月天歌词库来源的句子才显示 ❤️/✕
       // (highlightOn 选到 mayday 句时显式传 true)
-      // tts: true 自动朗读气泡(v1.11); false 不朗读; 'force' 强制朗读(忽略冷却)
-      const { typing = true, duration = 2800, typingSpeed = defaultSpeed, onHide: cb, allowFeedback = false, tts = true } = opts;
+      // v1.0.3: TTS 已禁用,opts.tts 参数不再生效(window._ttsSpeak 永远是 noop stub)
+      const { typing = true, duration = 2800, typingSpeed = defaultSpeed, onHide: cb, allowFeedback = false, tts = false } = opts;
       ensureEl();
 
       // 打断旧的：先关掉旧 hide/typing timer，但不立刻 hide 元素（避免抢动画）
       clearHideTimer();
       clearTypingTimer();
 
-      // v1.11 TTS 朗读(开启时)
+      // v1.0.3: TTS 朗读已禁用,以下整段注释掉
+      /*
       if (tts && window._ttsSpeak) {
         const ttsPref = (window._prefs && window._prefs.tts) || {};
-        const ttsEnabled = ttsPref.enabled !== false;  // 默认开启
+        const ttsEnabled = ttsPref.enabled !== false;
         if (ttsEnabled) {
           window._ttsSpeak(text);
         }
       }
+      */
 
       // 注册本次 show 的 onHide 回调（用 token 配对，避免被后续 show 覆盖）
       onHide = typeof cb === 'function' ? cb : null;
@@ -1056,16 +1058,16 @@ const HOVER_BUBBLES = {
     const isFromMayday = MAYDAY_LINES_SET.has(text);
     const scale = (window._prefs && window._prefs.petScale) || 1.0;
     const allowFeedback = isFromMayday && scale >= 0.9;
-    // tts: false 关闭 Bubble.show 默认朗读(它只读第一行)
-    // 然后自己调 speakBubble(text, { fullText: true }) 读完整歌词
-    Bubble.show(text, { typing: false, duration: 5000, allowFeedback, tts: false });
-    // 单独调完整朗读
+    // v1.0.3: TTS 已禁用,不再调 _ttsSpeak,直接显示气泡
+    Bubble.show(text, { typing: false, duration: 5000, allowFeedback });
+    // v1.0.3: 完整朗读逻辑已删除
+    /*
     if (window._ttsSpeak) {
-      // 等 250ms 避开 Bubble.show 的 TTS(我们关了,但避免竞态)
       setTimeout(() => {
         window._ttsSpeak(text, { fullText: true });
       }, 250);
     }
+    */
   }
 
   // 高亮切换(不带金句) —— v1.11.4 click 路径专用
@@ -1340,7 +1342,7 @@ hitArea.addEventListener('contextmenu', (e) => {
         switchFrame('idle');
       }, 2000);
     } else if (action === 'sing') {
-      // 让它唱首歌 —— 选歌词(带 ｜) + 切到 sing 帧 + TTS 朗读
+      // v1.0.3: TTS 已禁用,去掉朗读,只显示歌词气泡
       if (typeof showSingingBubble === 'function') {
         showSingingBubble();
       } else if (typeof highlightOn === 'function') {
@@ -1348,14 +1350,9 @@ hitArea.addEventListener('contextmenu', (e) => {
         highlightOn();
       }
     } else if (action === 'speak') {
-      // 右键菜单"🔊 朗读这条" —— 强制朗读当前气泡(忽略 5s 冷却)
-      if (window._ttsSpeak) {
-        // 优先读 pinnedText(当前显示的气泡),否则用最近一个气泡
-        const text = window._currentBubbleText || '';
-        if (text && window._ttsSpeak) {
-          window._ttsSpeak(text);
-        }
-      }
+      // v1.0.3: 右键菜单 "🔊 朗读这条" 项已删除,这个 action 不再触发
+      // 保留分支以防旧版缓存或意外触发,no-op 处理
+      console.log('[menu] action "speak" 已废弃 (TTS 已关闭),忽略');
     } else if (action === 'smile') {
       // 右键菜单"笑一下"：立即切到眯眼帧(锁住、不自动回)，气泡消失后才回 idle
       // 守卫 1：sleep 帧不抢 —— 睡觉时笑就破坏睡眠语义了
@@ -1798,8 +1795,14 @@ hitArea.addEventListener('contextmenu', (e) => {
   }
 
   // ============================================================
-  //  TTS 朗读 —— v1.11
+  //  v1.0.3: TTS 朗读功能已完全关闭
+  //  整段 v1.11 ~ v1.11.5 的 TTS 实现 (pickChineseVoice / speakBubble /
+  //  fallbackWebSpeech / window._ttsSpeak) 全部注释掉,不再有语音合成/播放。
+  //  重新启用时:把这段 /* */ 注释打开 + 恢复 preload.js + main.js 的
+  //  TTS IPC handler + settings.html 的 TTS section 即可。
   // ============================================================
+  /*
+  //  TTS 朗读 —— v1.11
   //  使用浏览器内置 SpeechSynthesis API (Electron = Chromium)
   //  Win32 上用 Edge TTS 中文女声 (Xiaoxiao / Yaoyao)
   //  朗读策略:
@@ -1807,55 +1810,41 @@ hitArea.addEventListener('contextmenu', (e) => {
   //   - 5s 冷却(避免朗读太频繁)
   //   - 当前朗读队列只有一个(speechSynthesis.cancel() 打断旧的)
   //   - 歌词(｜ 分隔)只朗读第一行(避免唱歌听不清)
-  // v1.11.2 策略调整: 不打断旧的 + 不重复读相同 text
-  // 设计哲学:
+  //  v1.11.2 策略调整: 不打断旧的 + 不重复读相同 text
+  //  设计哲学:
   //   - TTS 是"连续朗读"流,不是"瞬时播报"
   //   - 用户期望: 看到 A 听到 A (但 Web Speech API 有 200-500ms 启动延迟)
   //   - 实际: 1-2s 内的气泡用同一段 text, 不应该重复读
   //   - 新 text 来时, 让旧读完成 (cancel 会让用户觉得"说一半停了")
   //   - 通过 _ttsCurrentText 标记"当前正在读" + 跳过相同 text
 
-  // v1.11.5: 通用选声函数(根据 petProfile.gender 选男声/女声)
-  //  - female → 优先 Xiaoxiao / Yaoyao / Huihui(温柔成年女声 → 儿童 → 正式)
-  //  - male   → 优先 Yunyang / Kangkang / Yunxi(沉稳成年男声 → 年轻 → 青年)
-  //  - other  → 优先 Xiaoxiao(温柔,不指定性别)
-  // 用户可在 settings 里手动指定(留 TODO:v1.12)
-  // v1.11.5: 通用选声函数(根据 petProfile.gender + tts.voicePref 选)
-  //  - voicePref='auto'  → 按 gender 自动选男/女声
-  //  - voicePref='female'/'male'/'other' → 强制选对应声音池
-  //  - voicePref='custom' → 用 tts.customVoice 字符串匹配(子串匹配)
   function pickChineseVoice(gender) {
     if (!window.speechSynthesis) return null;
     const voices = window.speechSynthesis.getVoices();
     if (!voices || !voices.length) return null;
     const tts = (window._prefs && window._prefs.tts) || {};
     const pref = tts.voicePref || 'auto';
-    // 1) custom: 按用户填的声音名匹配(不区分大小写子串)
     if (pref === 'custom' && tts.customVoice && tts.customVoice.trim()) {
       const needle = tts.customVoice.trim();
       const v = voices.find(v => v.name.toLowerCase().includes(needle.toLowerCase()));
       if (v) return v;
-      // 没匹配到 → fallback 到 auto
     }
-    // 2) 强制选某个声音池
     let forced;
     if (pref === 'female') forced = 'female';
     else if (pref === 'male') forced = 'male';
     else if (pref === 'other') forced = 'other';
-    else forced = gender || 'other';  // auto: 用 petProfile.gender
+    else forced = gender || 'other';
     let candidates;
     if (forced === 'male') {
-      // v1.11.5: 移除 Sin-ji(粤语女声,误匹配) + zh-CN(name 里没 zh-CN 字符串,永远不匹配)
       candidates = [
         /Microsoft Yunyang/i, /Microsoft Kangkang/i, /Microsoft Yunxi/i,
-        /Danny/i,  // 港粤男声
+        /Danny/i,
       ];
     } else if (forced === 'other') {
       candidates = [
         /Microsoft Xiaoxiao/i, /Microsoft Yunyang/i,
       ];
     } else {
-      // female
       candidates = [
         /Microsoft Xiaoxiao/i, /Microsoft Yaoyao/i, /Microsoft Huihui/i,
         /Tingting/i, /Tracy/i, /Mei/i, /Yating/i,
@@ -1865,14 +1854,10 @@ hitArea.addEventListener('contextmenu', (e) => {
       const v = voices.find(v => re.test(v.name));
       if (v) return v;
     }
-    // v1.11.5: 第二层 fallback —— 按性别找任意 zh voice
     if (forced === 'male') {
-      // 找所有 zh voice,然后用 voice name 启发式判断男女
-      // 男声关键词:Yunyang/Kangkang/Yunxi/Guy/Haoxiang/Ryan/David/Mark 等
       const maleKeywords = /Yunyang|Kangkang|Yunxi|Guy|Haoxiang|Ryan|David|Mark/i;
       const maleVoice = voices.find(v => v.lang && v.lang.startsWith('zh') && maleKeywords.test(v.name));
       if (maleVoice) return maleVoice;
-      // v1.11.5 fix: 强制男声但找不到男声 → 不返回女声!让浏览器用系统默认
       return null;
     } else if (forced === 'female') {
       const femaleKeywords = /Xiaoxiao|Yaoyao|Huihui|Tingting|Xiaomeng|Xiaoyi/i;
@@ -1880,25 +1865,20 @@ hitArea.addEventListener('contextmenu', (e) => {
       if (femaleVoice) return femaleVoice;
       return null;
     }
-    // auto + other: 任意中文 voice(用户没明确偏好,系统默认 OK)
     return voices.find(v => v.lang && v.lang.startsWith('zh')) || voices[0];
   }
 
   function speakBubble(text, opts = {}) {
     if (!text) return false;
     let ttsText = text;
-    // v1.11.4: fullText=true 时朗读完整歌词(右键"唱歌"用)
-    //          默认 false(打招呼/状态反馈/dodge 只读第一行,避免过长)
     if (!opts.fullText && ttsText.includes('｜')) {
       ttsText = ttsText.split('｜')[0];
     }
-    // 过滤纯 emoji / 标点
-    ttsText = ttsText.replace(/[^\u4e00-\u9fa5\u3040-\u30ffa-zA-Z0-9\s,。.!?~]/g, '').trim();
+    ttsText = ttsText.replace(/[^一-鿿぀-ゟ゠-ヿa-zA-Z0-9\s,。.!?~]/g, '').trim();
     if (!ttsText) return false;
 
     const ttsPref = (window._prefs && window._prefs.tts) || {};
 
-    // v1.11.5: 走主进程 edge-tts + sound-play(绕开 transparent window audio 限制)
     if (window.petAPI && window.petAPI.ttsSpeak) {
       let voiceOpt = null;
       if (ttsPref.voicePref === 'custom' && ttsPref.customVoice) {
@@ -1908,7 +1888,6 @@ hitArea.addEventListener('contextmenu', (e) => {
       const pitchHz = Math.round(((ttsPref.pitch || 1.0) - 1.0) * 50);
       const volPct = Math.round(((ttsPref.volume || 1.0) - 1.0) * 100);
 
-      // 不在 renderer 播,也不 fallback(主进程失败就静默 — 因为 fallback 也只是机械音,不如静默)
       window.petAPI.ttsSpeak(ttsText, {
         voice: voiceOpt || undefined,
         rate: (ratePct >= 0 ? '+' : '') + ratePct + '%',
@@ -1924,11 +1903,9 @@ hitArea.addEventListener('contextmenu', (e) => {
       return true;
     }
 
-    // 没有 petAPI.ttsSpeak → fallback
     return fallbackWebSpeech(ttsText, opts);
   }
 
-  // 兜底:本地 Web Speech API —— 网络挂了时也能说话
   function fallbackWebSpeech(ttsText, opts) {
     if (!window.speechSynthesis) return false;
     try {
@@ -1951,13 +1928,15 @@ hitArea.addEventListener('contextmenu', (e) => {
       return false;
     }
   }
-  // 暴露到 window 供其他模块用(右键菜单手动朗读)
   window._ttsSpeak = speakBubble;
-  // 兜底 Web Speech API —— 仅在 edge-tts 失败时启用
-  // prefill voices 列表以加速 voiceschanged
   if (window.speechSynthesis) {
     window.speechSynthesis.getVoices();
   }
+  */
+
+  // v1.0.3: TTS 已关闭,但其他模块会 check `window._ttsSpeak && ...`
+  // 暴露一个 noop stub,保证所有调用点安全 no-op,不会报错
+  window._ttsSpeak = function () { return false; };
 
   // ============================================================
   //  启动问候 + 天气播报 —— v1.9

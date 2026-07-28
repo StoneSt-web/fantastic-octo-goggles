@@ -287,9 +287,10 @@ async function setupWeather(prefs) {
   });
 }
 
-// TTS 朗读设置 —— v1.11
-//  启用开关 + 语速/音调 slider + 试听按钮
-//  注: settings 窗口和主桌宠共享同一份 prefs, 改动立刻生效
+// v1.0.3: TTS 朗读设置 UI 已禁用
+//  整个 setupTTS 函数 (v1.11 ~ v1.11.5) 注释掉,不再有任何 TTS 设置入口
+//  重新启用时:把这段 /* */ 注释打开 + 恢复 settings.html 的 TTS section 即可
+/*
 function setupTTS(prefs) {
   // v1.11.5: TTS section 临时隐藏,如果被移走就跳过
   const section = document.getElementById('ttsSection');
@@ -439,6 +440,7 @@ function setupTTS(prefs) {
     }
   });
 }
+*/
 
 function setupReset() {
   document.getElementById('resetBtn').onclick = async () => {
@@ -995,7 +997,8 @@ function setupProfile(profile) {
     setupToggle('rememberPosition', prefs, 'rememberPosition');
     setupProfile(profile);
     setupWeather(prefs);
-    setupTTS(prefs);
+    // v1.0.3: TTS 已禁用,setupTTS 调用注释掉
+    // setupTTS(prefs);
     setupNotifications(prefs);
     setupReset();
   } catch (e) {

@@ -150,7 +150,10 @@
         </div>
       </section>
 
-      <!-- TTS 朗读 —— v1.11 (v1.11.5 临时隐藏,等后续版本优化后展示) -->
+      <!-- v1.0.3: TTS 朗读 UI 已完全移除
+           整段 v1.11 ~ v1.11.5 的 TTS 设置面板 (#ttsSection) 注释掉,不再渲染
+           重新启用时:把这段 <!-- --> 注释打开 + 恢复 setupTTS(prefs) 调用 + 恢复 main.js / preload.js / renderer.js 里的 TTS 实现即可 -->
+      <!--
       <section class="settings-group" id="ttsSection" hidden>
         <h2>🔊 气泡朗读 (TTS)</h2>
 
@@ -224,7 +227,8 @@
           </div>
         </div>
       </section>
-      <!-- /TTS (hidden) -->
+      -->
+      <!-- /TTS (removed in v1.0.3) -->
 
       <!-- 定时通知 —— v1.13 -->
       <section class="settings-group" id="notifSection">

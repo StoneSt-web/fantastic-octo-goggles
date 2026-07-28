@@ -533,7 +533,7 @@ ipcMain.handle('pet:show-menu', (event, pos) => {
     { label: '🎤 让它唱首歌',   click: () => petWindow.webContents.send('pet:menu-action', 'sing') },
     { label: '😊 让它笑一下',   click: () => petWindow.webContents.send('pet:menu-action', 'smile') },
     { label: '💖 比心',         click: () => petWindow.webContents.send('pet:menu-action', 'heart') },
-    { label: '🔊 朗读这条',     click: () => petWindow.webContents.send('pet:menu-action', 'speak') },
+    // v1.0.3: TTS 已禁用,移除 '🔊 朗读这条' 菜单项
     { label: '😴 让它睡觉',     click: () => petWindow.webContents.send('pet:menu-action', 'sleep') },
     { type: 'separator' },
     { label: '🍅 番茄钟',       click: async () => {
@@ -854,16 +854,22 @@ ipcMain.handle('pet:get-ip-location', async () => {
 });
 
 // ============================================================
-//  v1.11.5: TTS 语音合成 + 播放 —— 走 edge-tts 拿 mp3 + 主进程直接播放
-//  设计原因: Electron 透明窗口下 <audio> 元素 audio.play() 经常静默失败,
-//           主进程用 sound-play 走系统音频设备,绕开 sandbox 问题
+//  v1.0.3: TTS 朗读功能已完全关闭
+//  整段 v1.11.5 实现的 edge-tts + sound-play + 主进程 IPC handler
+//  全部注释掉,不再有语音合成/播放/调用链。
+//  - 保留 scripts/edge-tts.js 文件(归档),但 require 已移除
+//  - 保留 settings.tts 字段(配置还在),但 UI/逻辑都不再读写
+//  - 右键菜单 '🔊 朗读这条' 项已删除
+//  - settings 面板 TTS section 已注释
+//  - renderer._ttsSpeak 已变成 noop
+//  重新启用时:把这段 /* */ 注释打开 + 恢复下面的 4 处调用即可
 // ============================================================
+/*
 const { synthesize, pickVoiceByProfile } = require('../scripts/edge-tts.js');
 const soundPlay = require('sound-play');
 const os = require('os');
 const crypto = require('crypto');
 
-// 临时目录存放 mp3,播完删
 const TTS_TMP_DIR = path.join(os.tmpdir(), 'desktop-pet-tts');
 if (!fs.existsSync(TTS_TMP_DIR)) {
   fs.mkdirSync(TTS_TMP_DIR, { recursive: true });
@@ -871,7 +877,6 @@ if (!fs.existsSync(TTS_TMP_DIR)) {
 
 ipcMain.handle('pet:tts-speak', async (_evt, text, opts) => {
   try {
-    // v1.11.5: 检查 tts.enabled 总开关(防止 renderer 端检查失效时还朗读)
     const s = settings.read();
     if (!s.tts || s.tts.enabled === false) {
       return { ok: false, error: 'tts disabled' };
@@ -884,49 +889,39 @@ ipcMain.handle('pet:tts-speak', async (_evt, text, opts) => {
       voice = pickVoiceByProfile(profile.gender, profile.birthday);
     }
     const userRate = (opts && opts.rate) || '+0%';
-    console.log('[tts-speak] voice=', voice, 'text=', text.slice(0, 30), 'rate=', userRate);
     const buf = await synthesize(text, {
       voice,
       rate: userRate,
       pitch: (opts && opts.pitch) || '+0Hz',
       volume: (opts && opts.volume) || '+0%',
     });
-    // 写到临时文件 + 用 sound-play 播放 + 延后清理
     const filename = `tts-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.mp3`;
     const filepath = path.join(TTS_TMP_DIR, filename);
     fs.writeFileSync(filepath, buf);
-    console.log('[tts-speak] mp3 saved:', filepath, '(', buf.length, 'bytes )');
-    // 异步播放(不阻塞 IPC)
     soundPlay.play(filepath).then(() => {
-      console.log('[tts-speak] played OK');
     }).catch((e) => {
-      console.error('[tts-speak] sound-play failed:', e.message);
     }).finally(() => {
-      // 5 秒后清理临时文件(给 audio 设备留缓冲)
       setTimeout(() => {
-        try { fs.unlinkSync(filepath); } catch (e) { /* ignore */ }
+        try { fs.unlinkSync(filepath); } catch (e) {  // ignore
+        }
       }, 5000);
     });
-    // v1.11.5: 估算 mp3 时长,renderer 用来延长气泡显示时间,避免文字消失后声音还在继续
-    // 估算依据:中文 YunyangNeural 语速约 4-5 字/秒(实际测得),按用户 rate 调整
-    // rate='+70%' → factor=1.7 → 实际播放时长 = 基础时长 / 1.7
     const ratePct = parseInt(userRate.replace(/[^-\d]/g, '')) || 0;
     const factor = 1 + ratePct / 100;
-    const charCount = text.replace(/[｜\s]/g, '').length;  // 排除 ｜ 和空格
-    const baseSec = charCount * 0.25;  // 4 字/秒
+    const charCount = text.replace(/[｜\s]/g, '').length;
+    const baseSec = charCount * 0.25;
     const estimatedDurationMs = Math.max(800, (baseSec / factor) * 1000);
     return { ok: true, voice, bytes: buf.length, estimatedDurationMs };
   } catch (e) {
-    console.error('[tts-speak] failed:', e.message);
     return { ok: false, error: e.message };
   }
 });
 
-// 返回推荐 voice 列表(settings.js 用)
 ipcMain.handle('pet:tts-list-voices', () => {
   const { RECOMMENDED_VOICES } = require('../scripts/edge-tts.js');
   return RECOMMENDED_VOICES;
 });
+*/
 
 // ============================================================
 //  v1.13 定时通知(番茄钟/喝水/久坐)—— 调度器 IPC
@@ -1002,8 +997,8 @@ ipcMain.handle('pet:get-prefs', () => {
     activeSkin: s.activeSkin,
     // v1.9 天气字段
     weather: s.weather || { city: '', enabled: true },
-    // v1.11 TTS 字段
-    tts: s.tts || { enabled: true, rate: 1.0, pitch: 1.0, volume: 1.0, voicePref: 'auto', customVoice: '' },
+    // v1.0.3: TTS 已禁用,不再返回 tts 字段
+    // tts: s.tts || { enabled: true, rate: 1.0, pitch: 1.0, volume: 1.0, voicePref: 'auto', customVoice: '' },
     // v1.13 定时通知
     notifications: s.notifications || { pomodoro: true, hydration: true, sedentary: true, workMin: 25, restMin: 5, hydrationMin: 60, sedentaryMin: 60 },
   };
@@ -1046,14 +1041,14 @@ function validatePrefs(prefs) {
     weather: (v) => v && typeof v === 'object'
       && typeof v.city === 'string' && v.city.length <= 50
       && typeof v.enabled === 'boolean',
-    // v1.11 TTS 字段:嵌套对象 { enabled, rate, pitch, volume }
-    tts: (v) => v && typeof v === 'object'
-      && typeof v.enabled === 'boolean'
-      && (v.rate == null || (typeof v.rate === 'number' && v.rate >= 0.5 && v.rate <= 2.0))
-      && (v.pitch == null || (typeof v.pitch === 'number' && v.pitch >= 0 && v.pitch <= 2.0))
-      && (v.volume == null || (typeof v.volume === 'number' && v.volume >= 0 && v.volume <= 1.0))
-      && (v.voicePref == null || ['auto', 'female', 'male', 'custom'].includes(v.voicePref))
-      && (v.customVoice == null || (typeof v.customVoice === 'string' && v.customVoice.length <= 40)),
+    // v1.0.3: TTS 已禁用,不再校验 tts 字段(原 7 行全注释)
+    // tts: (v) => v && typeof v === 'object'
+    //   && typeof v.enabled === 'boolean'
+    //   && (v.rate == null || (typeof v.rate === 'number' && v.rate >= 0.5 && v.rate <= 2.0))
+    //   && (v.pitch == null || (typeof v.pitch === 'number' && v.pitch >= 0 && v.pitch <= 2.0))
+    //   && (v.volume == null || (typeof v.volume === 'number' && v.volume >= 0 && v.volume <= 1.0))
+    //   && (v.voicePref == null || ['auto', 'female', 'male', 'custom'].includes(v.voicePref))
+    //   && (v.customVoice == null || (typeof v.customVoice === 'string' && v.customVoice.length <= 40)),
     // v1.13 定时通知
     notifications: (v) => v && typeof v === 'object'
       && (v.pomodoro == null || typeof v.pomodoro === 'boolean')

@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-07-28
+
+### 🔇 移除
+
+- **TTS 气泡朗读功能已完全关闭**:用户反馈 TTS 体验问题(网络卡顿/音色不稳/朗读时机不对),决定关闭整个朗读功能。
+  - `src/main.js`: 整段 TTS IPC handler 块 (edge-tts require / sound-play / TTS_TMP_DIR / pet:tts-speak / pet:tts-list-voices) 注释
+  - `src/main.js`: 右键菜单 `🔊 朗读这条` 项删除
+  - `src/main.js`: `pet:get-prefs` 不再返回 tts 字段
+  - `src/main.js`: `validatePrefs` 不再校验 tts 字段
+  - `src/preload.js`: 移除 `ttsSpeak` / `ttsListVoices` expose
+  - `src/renderer/renderer.js`: 整段 TTS 实现 (pickChineseVoice / speakBubble / fallbackWebSpeech) 注释,`window._ttsSpeak` 改为 noop stub
+  - `src/renderer/renderer.js`: Bubble.show 默认 `tts: false`
+  - `src/renderer/renderer.js`: showSingingBubble 不再调 `_ttsSpeak`
+  - `src/renderer/renderer.js`: sing / speak menu action 处理简化(speak action 改 no-op)
+  - `src/renderer/settings.js`: `setupTTS` 函数 + 调用注释
+  - `src/renderer/settings.html`: 整个 TTS section 注释
+  - **保留**: `settings.tts` 字段(配置还在), `scripts/edge-tts.js` 文件(归档,未被 require)
+  - **保留**: 任何 `window._ttsSpeak && ...` 调用都安全 no-op(因为 stub 返回 false)
+
+### 如何重新启用
+
+- 打开 `src/main.js` 把 TTS 块注释恢复 (搜 `v1.0.3: TTS 朗读功能已完全关闭`)
+- 打开 `src/preload.js` 恢复 ttsSpeak / ttsListVoices 暴露
+- 打开 `src/renderer/renderer.js` 恢复 TTS 实现块 + Bubble.show 默认 tts=true
+- 打开 `src/renderer/settings.js` 恢复 setupTTS + setupTTS(prefs) 调用
+- 打开 `src/renderer/settings.html` 恢复 TTS section 注释
+
 ## [1.0.2] - 2026-07-28
 
 ### 🐛 修复
